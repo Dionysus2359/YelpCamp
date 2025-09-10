@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== "production") {
 
 const express = require('express');
 const app = express();
+app.set('query parser', 'extended');
 const path = require('path');
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
@@ -14,6 +15,8 @@ const flash = require('connect-flash');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const User = require('./models/user');
+const sanitizeV5 = require('./utils/mongoSanitizeV5.js');
+const helmet = require('helmet');
 
 const userRoutes = require('./routes/user');
 const campgroundRoutes = require('./routes/campgrounds');
@@ -33,12 +36,64 @@ app.engine('ejs', engine);
 app.use(express.urlencoded({ extended: true })); //to parse req body, extended true is to parse nested objects
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(sanitizeV5({ replaceWith: '_' }));
+app.use(helmet());
 
-sessionConfig = {
+const scriptSrcUrls = [
+    "https://stackpath.bootstrapcdn.com/",
+    "https://cdn.maptiler.com/",
+    "https://kit.fontawesome.com/",
+    "https://cdnjs.cloudflare.com/",
+    "https://cdn.jsdelivr.net",
+];
+const styleSrcUrls = [
+    "https://kit-free.fontawesome.com/",
+    "https://stackpath.bootstrapcdn.com/",
+    // "https://api.mapbox.com/",
+    // "https://api.tiles.mapbox.com/",
+    "https://fonts.googleapis.com/",
+    "https://use.fontawesome.com/",
+    "https://cdn.jsdelivr.net",
+    "https://cdn.maptiler.com/", // add this
+];
+const connectSrcUrls = [
+    // "https://api.mapbox.com/",
+    // "https://a.tiles.mapbox.com/",
+    // "https://b.tiles.mapbox.com/",
+    // "https://events.mapbox.com/",
+    "https://api.maptiler.com/", // add this
+];
+const fontSrcUrls = [];
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: [],
+            connectSrc: ["'self'", ...connectSrcUrls],
+            scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+            styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+            workerSrc: ["'self'", "blob:"],
+            objectSrc: [],
+            imgSrc: [
+                "'self'",
+                "blob:",
+                "data:",
+                "https://res.cloudinary.com/dionysus2359/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT! 
+                "https://images.unsplash.com/",
+                "https://api.maptiler.com/",
+            ],
+            fontSrc: ["'self'", ...fontSrcUrls],
+        },
+    })
+);
+
+const sessionConfig = {
+    name: 'session',
     secret: 'ramram',
     resave: false,
     saveUninitialized: true,
     cookie: {
+        httpOnly: true,
+        // secure: true,
         expires: Date.now + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
@@ -51,7 +106,7 @@ app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 
 passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());   
+passport.deserializeUser(User.deserializeUser());
 
 app.use((req, res, next) => {
     res.locals.currentUser = req.user;
