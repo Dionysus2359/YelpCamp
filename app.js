@@ -24,7 +24,7 @@ const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 
 // dbUrl = process.env.DB_URL;
-dbUrl = 'mongodb://localhost:27017/yelp-camp' || process.env.DB_URL;
+dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
 mongoose.connect(dbUrl); // Connect to the MongoDB database named 'yelp-camp'
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connnection error:')); // Log any connection errors(on listens for error event every time on the db object)
