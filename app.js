@@ -11,6 +11,7 @@ const methodOverride = require('method-override');
 const engine = require('ejs-mate');
 const ExpressError = require("./utils/ExpressError");
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -22,7 +23,9 @@ const userRoutes = require('./routes/user');
 const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp'); // Connect to the MongoDB database named 'yelp-camp'
+// dbUrl = process.env.DB_URL;
+dbUrl = 'mongodb://localhost:27017/yelp-camp' || process.env.DB_URL;
+mongoose.connect(dbUrl); // Connect to the MongoDB database named 'yelp-camp'
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connnection error:')); // Log any connection errors(on listens for error event every time on the db object)
 db.once('open', () => {
@@ -85,10 +88,23 @@ app.use(
         },
     })
 );
+const secret = process.env.SECRET || "ramram";
+
+const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: secret
+    }
+})
+store.on("error", (e) => {
+    console.log("Session store Error!", e);
+})
 
 const sessionConfig = {
+    store,
     name: 'session',
-    secret: 'ramram',
+    secret: secret,
     resave: false,
     saveUninitialized: true,
     cookie: {
