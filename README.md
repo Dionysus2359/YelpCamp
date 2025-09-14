@@ -2,7 +2,6 @@
 [Live Demo](https://yelpcamp-wvky.onrender.com/)
 
 YelpCamp is a full-stack web application inspired by Yelp, where users can create, view, review, and manage campgrounds.  
-It was built while following **Colt Steele’s Web Developer Bootcamp**, with additional features and improvements.
 
 ---
 
